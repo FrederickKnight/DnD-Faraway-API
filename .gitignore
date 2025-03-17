@@ -1,6 +1,8 @@
 #custom
 instance
 docker-compose.env
+dockerfile.dev
+tests_requirements.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
