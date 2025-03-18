@@ -1,2 +1,3 @@
 docker-compose.env
 tests_requirements.txt
+test_code.py

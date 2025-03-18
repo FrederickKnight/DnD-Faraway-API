@@ -9,7 +9,7 @@ from sqlalchemy.orm import (
 )   
 
 from sqlalchemy import (
-    Boolean,
+    String,
     ForeignKey
 )
 
@@ -55,6 +55,36 @@ class BaseCreatable(BaseModel):
         
 # ----------------------- END BASE CLASS -----------------------
 
+# ----------------------- START AUTH CLASS -----------------------
+
+class User(BaseModel,UserMixin):
+    id:Mapped[int] = mapped_column(primary_key=True)
+    username:Mapped[str] = mapped_column(String(20),unique=True)
+    password:Mapped[str]
+    
+    auth_level:Mapped[int]
+    
+    spell_creation:Mapped["UserSpell"] = relationship("UserSpell",back_populates="user")
+    
+    def __repr__(self):
+        return f"<{self.__getClassName__()}(id={self.id},username={self.username}>"
+    
+    def __get_secrets__(self):
+        return {
+            "id":self.id,
+            "username":self.username,
+            "password":self.password,
+            "auth_level":self.auth_level
+        }
+        
+    def get_dict(self):
+        return {
+            "id":self.id,
+            "username":self.username,
+        }
+
+# ----------------------- END AUTH CLASS -----------------------
+
 # ----------------------- START MAIN CLASS -----------------------
 
 class SpellSchool(BaseCreatable):
@@ -64,6 +94,8 @@ class SpellSchool(BaseCreatable):
 class Spell(BaseCreatable):
     id_stats:Mapped[int] = mapped_column(ForeignKey("spell_stats.id"))
     stats:Mapped["SpellStats"] = relationship("SpellStats",back_populates="spell")
+    
+    user_creation:Mapped["UserSpell"] = relationship("UserSpell",back_populates="spell")
     
     def __repr__(self):
         return f"<{self.__getClassName__()}(id={self.id},name={self.name},version={self.version},is_homebrew={self.is_homebrew},description={self.description},id_stats={self.id_stats})>"
@@ -80,6 +112,28 @@ class Spell(BaseCreatable):
         }
 
 # ----------------------- END MAIN CLASS -----------------------
+
+# ----------------------- START RELATIONSHIP WITH USER CLASS -----------------------
+
+class UserSpell(BaseModel):
+    id_spell:Mapped[int] = mapped_column(ForeignKey("spell.id"),unique=True)
+    spell:Mapped["Spell"] = relationship("Spell",back_populates="user_creation")
+    
+    id_user:Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user:Mapped["User"] = relationship("User",back_populates="spell_creation")
+    
+    def __repr__(self):
+        return f"<{self.__getClassName__()}(id={self.id},id_user={self.id_user},id_spell={self.id_spell})>"
+    
+    def get_dict(self):
+        return {
+            "id":self.id,
+            "user":self.user.get_dict(),
+            "spell":self.spell.get_dict()
+        }
+
+# ----------------------- END RELATIONSHIP WITH USER CLASS -----------------------
+
 
 # ----------------------- START RELATIONSHIP CLASS -----------------------
 

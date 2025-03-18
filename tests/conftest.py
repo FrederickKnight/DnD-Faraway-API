@@ -5,6 +5,8 @@ from app import create_app
 
 app = create_app()
 
+#DB_TESTING_NAME = os.environ["DB_NAME"]
+
 DB_TESTING_NAME = os.environ["DB_TESTING_NAME"]
 
 @pytest.fixture

@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 import os
 
 db = SQLAlchemy()
@@ -7,6 +8,8 @@ db = SQLAlchemy()
 DB_NAME = os.environ["DB_NAME"]
 
 app = Flask(__name__)
+
+bcrypt = Bcrypt(app)
 
 def create_app():
     
@@ -35,14 +38,27 @@ def define_routes():
         spell_route,
         spell_stats_route,
         spell_components_route,
-        spell_scaling_route
+        spell_scaling_route,
+        spell_user_creation_route
     )
+    
+    from app.routes.auth import (
+        auth_route
+    )
+    
+    app.register_blueprint(auth_route.auth_user_bp,url_prefix="/auth/")
+    
     
     app.register_blueprint(spell_school_route.spell_school_bp,url_prefix="/api/spell-school/")
     app.register_blueprint(spell_route.spell_bp,url_prefix="/api/spell/")
     app.register_blueprint(spell_stats_route.spell_stats_bp,url_prefix="/api/spell-stats/")
     app.register_blueprint(spell_components_route.spell_components_bp,url_prefix="/api/spell-components/")
     app.register_blueprint(spell_scaling_route.spell_scaling_bp,url_prefix="/api/spell-scaling/")
+    
+    
+    # user relations
+    app.register_blueprint(spell_user_creation_route.spell_user_creation_bp,url_prefix="/api/user/spell")
+    
 
 def __return_json__(items_query):
         try:
