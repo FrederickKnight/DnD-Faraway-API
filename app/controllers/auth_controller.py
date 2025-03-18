@@ -109,8 +109,10 @@ class AuthBaseController:
 
     def controller_authenticate(self,data):
         _query = self.__return_json__(self.__query_username__(data["username"]),False)
+        isAuth = False
         
-        isAuth = bcrypt.check_password_hash(_query["data"][0]["password"],data["password"])
+        if _query:
+            isAuth = bcrypt.check_password_hash(_query["data"][0]["password"],data["password"])
         
         if isAuth:
             del _query["data"][0]["password"]
