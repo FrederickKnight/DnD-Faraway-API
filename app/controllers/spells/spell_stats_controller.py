@@ -2,7 +2,7 @@ from app.models import (
     SpellStats
 )
 
-from .base_controller import BaseController
+from app.controllers import BaseController
 
 class SpellStatsController(BaseController):
     def __init__(self):

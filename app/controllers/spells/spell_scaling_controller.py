@@ -2,7 +2,7 @@ from app.models import (
     SpellScaling
 )
 
-from .base_controller import BaseController
+from app.controllers import BaseController
 
 class SpellScalingController(BaseController):
     def __init__(self):

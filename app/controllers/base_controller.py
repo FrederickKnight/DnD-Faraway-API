@@ -2,15 +2,17 @@ from app import db
 from app.error_handler import commit_error_handler
 from flask import Response,json
 
-session = db.session  
 
 class BaseController:
     def __init__(self,model,defaults):
         self.__model = model
         self.__defaults = defaults
         
+        self.session = db.session  
+        
+        
     def controller_get_all(self):
-        _query = session.query(self.__model).all()
+        _query = self.session.query(self.__model).all()
         return self.__return_json__(_query)
         
     
@@ -21,14 +23,14 @@ class BaseController:
             
         try:
             new_data = self.__model(**{**self.__defaults,**data})
-            session.add(new_data)
-            session.commit()
+            self.session.add(new_data)
+            self.session.commit()
             
         except Exception as e:
-            session.rollback()
+            self.session.rollback()
             return commit_error_handler(e)
         
-        return self.__return_json__(session.query(self.__model).filter_by(id = new_data.id).all())
+        return self.__return_json__(self.session.query(self.__model).filter_by(id = new_data.id).all())
         
         
     def controller_update(self,id = None,data = None):
@@ -56,12 +58,12 @@ class BaseController:
                 if hasattr(_query,key):
                     setattr(_query,key,value)
                     
-            session.merge(_query)
-            session.flush()
-            session.commit()
+            self.session.merge(_query)
+            self.session.flush()
+            self.session.commit()
             
         except Exception as e:
-            session.rollback()
+            self.session.rollback()
             return commit_error_handler(e)
         
         return self.__return_json__(_query)
@@ -70,11 +72,11 @@ class BaseController:
         _query = self.__query_id__(id)
         
         try:
-            session.delete(_query)
-            session.commit()
+            self.session.delete(_query)
+            self.session.commit()
             
         except Exception as e:
-            session.rollback()
+            self.session.rollback()
             return commit_error_handler(e)
         
         return Response(status=200)
@@ -110,7 +112,7 @@ class BaseController:
                 "error":"No hay un id con el que buscar"
             }
         else:
-            _query = session.query(self.__model).filter_by(id = _id).first()
+            _query = self.session.query(self.__model).filter_by(id = _id).first()
             if not _query:
                 return Response(response=json.dumps({}),status=404,mimetype="application/json")
             return _query
