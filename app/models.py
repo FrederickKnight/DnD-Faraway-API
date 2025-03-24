@@ -1,5 +1,4 @@
 from . import db
-from flask_login import UserMixin
 from typing import Optional
 
 from sqlalchemy.orm import (
@@ -57,7 +56,7 @@ class BaseCreatable(BaseModel):
 
 # ----------------------- START AUTH CLASS -----------------------
 
-class User(BaseModel,UserMixin):
+class User(BaseModel):
     username:Mapped[str] = mapped_column(String(20),unique=True)
     password:Mapped[str]
     
