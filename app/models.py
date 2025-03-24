@@ -58,13 +58,13 @@ class BaseCreatable(BaseModel):
 # ----------------------- START AUTH CLASS -----------------------
 
 class User(BaseModel,UserMixin):
-    id:Mapped[int] = mapped_column(primary_key=True)
     username:Mapped[str] = mapped_column(String(20),unique=True)
     password:Mapped[str]
     
     auth_level:Mapped[int]
     
     spell_creation:Mapped["UserSpell"] = relationship("UserSpell",back_populates="user")
+    user_session:Mapped["UserSession"] = relationship("UserSession",back_populates="user")
     
     def __repr__(self):
         return f"<{self.__getClassName__()}(id={self.id},username={self.username}>"
@@ -81,6 +81,25 @@ class User(BaseModel,UserMixin):
         return {
             "id":self.id,
             "username":self.username,
+        }
+        
+class UserSession(BaseModel):
+    id_user:Mapped[int] = mapped_column(ForeignKey("user.id"),unique=True)
+    user:Mapped["User"] = relationship("User",back_populates="user_session")
+    
+    session:Mapped[str]
+    
+    expires_at:Mapped[int]
+    
+    def __repr__(self):
+        return f"<{self.__getClassName__()}(id={self.id},id_user={self.id_user},expires_at={self.expires_at},session={self.session}>"
+    
+    def get_dict(self):
+        return {
+            "id":self.id,
+            "user":self.user.get_dict(),
+            "expires_at":self.expires_at,
+            "session":self.session
         }
 
 # ----------------------- END AUTH CLASS -----------------------
