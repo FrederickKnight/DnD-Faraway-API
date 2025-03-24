@@ -1,38 +1,51 @@
 from flask import Blueprint,request
 
-from app.controllers.auth.auth_controller import AuthControllerUser
+from app.auth import (
+    register_user,
+    get_by_id,
+    validate_user,
+    delete_user_by_id,
+    generateSessionToken,
+    createSessionToken,
+    validateSessionToken,
+    invalidateSession
+)
 
-auth_user_bp = Blueprint("auth_user",__name__)
+auth_bp = Blueprint("auth",__name__)
 
-# @auth_user_bp.route("/",methods=["GET"])
-# def get_all_user():
-#     return AuthControllerUser().controller_get_all()
-
-@auth_user_bp.route("/register",methods=["POST"])
-def add_user():
+@auth_bp.route("/register",methods=["POST"])
+def route_register_user():
     json_request = request.get_json()
-    return AuthControllerUser().controller_register(json_request)
+    return register_user(json_request)
 
-@auth_user_bp.route("/update",methods=["PUT"])
-def update_user():
+@auth_bp.route("/<int:id>/search",methods=["GET"])
+def route_get_by_id_user(id):
+    return get_by_id(id)
+
+@auth_bp.route("/user-validation",methods=["POST"])
+def route_user_validation_user():
     json_request = request.get_json()
-    return AuthControllerUser().controller_update(data=json_request)
+    return validate_user(json_request)
 
-@auth_user_bp.route("/<int:id>/update",methods=["PUT"])
-def update_by_id_user(id):
+@auth_bp.route("/<int:id>/delete",methods=["DELETE"])
+def route_delete_by_id(id):
+    return delete_user_by_id(id)
+
+@auth_bp.route("/session-token",methods=["GET"])
+def route_session_token():
+    return generateSessionToken()
+
+@auth_bp.route("/create-session/<int:id>",methods=["POST"])
+def route_test_user(id):
     json_request = request.get_json()
-    return AuthControllerUser().controller_update(id=id,data=json_request)
+    return createSessionToken(json_request,id)
 
-@auth_user_bp.route("/<int:id>/delete",methods=["DELETE"])
-def delete_user(id):
-    return AuthControllerUser().controller_delete(id)
-
-@auth_user_bp.route("/<int:id>",methods=["GET"])
-def get_by_id_user(id):
-    return AuthControllerUser().controller_get_by_id(id)
-
-@auth_user_bp.route("/authenticate",methods=["POST"])
-def auth_user():
+@auth_bp.route("/session-validation",methods=["POST"])
+def route_test_validation_user():
     json_request = request.get_json()
-    return AuthControllerUser().controller_authenticate(json_request)
+    return validateSessionToken(json_request["token"])
 
+@auth_bp.route("/session-invalidation",methods=["POST"])
+def route_test_invalidation_user():
+    json_request = request.get_json()
+    return invalidateSession(json_request["session"])

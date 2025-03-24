@@ -1,15 +1,18 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 import os
 
 db = SQLAlchemy()
 
 DB_NAME = os.environ["DB_NAME"]
+URL_WEB = "http://localhost:4321"
 
 app = Flask(__name__)
 
 bcrypt = Bcrypt(app)
+CORS(app)
 
 def create_app():
     
@@ -46,7 +49,8 @@ def define_routes():
         auth_route
     )
     
-    app.register_blueprint(auth_route.auth_user_bp,url_prefix="/auth/")
+    #user & auth
+    app.register_blueprint(auth_route.auth_bp,url_prefix="/api/auth/user")
     
     
     app.register_blueprint(spell_school_route.spell_school_bp,url_prefix="/api/spell-school/")
