@@ -8,6 +8,10 @@ Dnd API for the creation of Characters,Spells and More
     - [ ] Add Deleting Test
     - [ ] Refactor/Optimize Tests
 
+- [X] Enhance User Auth
+    - [X] Login And Logout
+    - [X] Authentication
+    - [X] Token for the frontend?
 
 ## Notes
 
