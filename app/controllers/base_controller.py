@@ -1,5 +1,5 @@
 from app import db
-from app.error_handler import commit_error_handler
+from app.error_handler import error_handler
 from flask import Response,json
 
 
@@ -28,7 +28,7 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return commit_error_handler(e)
+            return error_handler(e,"Error in commit")
         
         return self.__return_json__(self.session.query(self.__model).filter_by(id = new_data.id).all())
         
@@ -64,7 +64,7 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return commit_error_handler(e)
+            return error_handler(e,"Error in commit")
         
         return self.__return_json__(_query)
     
@@ -77,9 +77,9 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return commit_error_handler(e)
+            return error_handler(e,"Error in commit")
         
-        return Response(status=200)
+        return Response(status=204)
 
 
     def controller_get_by_id(self,id):
@@ -108,9 +108,12 @@ class BaseController:
         
     def __query_id__(self,_id):
         if not _id or not isinstance(_id,int):
-            return {
-                "error":"No hay un id con el que buscar"
+            error = {
+                "error": "Id Null",
+                "message" : "Required id for search, id it's not given",
+                "details" : ""
             }
+            return error_handler(error,"Error in query")
         else:
             _query = self.session.query(self.__model).filter_by(id = _id).first()
             if not _query:

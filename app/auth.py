@@ -1,5 +1,5 @@
 from app import db,Bcrypt
-from app.error_handler import commit_error_handler
+from app.error_handler import error_handler
 from flask import Response,json
 
 from os import urandom
@@ -50,7 +50,7 @@ def register_user(data):
             
         except Exception as e:
             session.rollback()
-            return commit_error_handler(e)
+            return error_handler(e,"Error in commit")
 
         return __return_json__(session.query(User).filter_by(id = new_data.id).first())
     else:
@@ -67,9 +67,9 @@ def delete_user_by_id(id):
             
         except Exception as e:
             session.rollback()
-            return commit_error_handler(e)
+            return error_handler(e,"Error in commit")
         
-        return Response(response=json.dumps({"message":"User deleted succesfully"}),status=200,mimetype="application/json")
+        return Response(status=204)
     else:
         return Response(response=json.dumps({"error":"User doesn't exist or invalid given data"}),status=400,mimetype="application/json")
 
