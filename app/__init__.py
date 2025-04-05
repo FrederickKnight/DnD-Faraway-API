@@ -36,7 +36,7 @@ def define_routes():
     # -------------------------------- Routes --------------------------------
     
     ## Spells Routes
-    from app.routes.spells import (
+    from server.app.routes.routes_spells import (
         spell_school_bp,
         spell_bp,
         spell_stats_bp,
