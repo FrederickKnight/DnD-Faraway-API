@@ -1,4 +1,4 @@
-from flask import Blueprint,request
+from flask import Blueprint
 
 from app.controllers.spells.spell_user_creation_controller import SpellUserCreationController
 
