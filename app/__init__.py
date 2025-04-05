@@ -7,7 +7,6 @@ import os
 db = SQLAlchemy()
 
 DB_NAME = os.environ["DB_NAME"]
-URL_WEB = "http://localhost:4321"
 
 app = Flask(__name__)
 
