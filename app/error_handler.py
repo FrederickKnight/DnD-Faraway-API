@@ -29,7 +29,6 @@ def error_handler(error,_context:str = ""):
             response_status = 400
         
     schema_error = {
-        {
             "data":[],
             "metadata":{
                 "context":_context,
@@ -37,7 +36,6 @@ def error_handler(error,_context:str = ""):
                 "message":_message,
                 "details":_details,
             }
-        }
     }
         
     return Response(response=json.dumps(schema_error),status=response_status,mimetype="application/json")
