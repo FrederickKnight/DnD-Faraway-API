@@ -1,0 +1,6 @@
+from .spell_components_controller import SpellComponentsController
+from .spell_controller import SpellController
+from .spell_scaling_controller import SpellScalingController
+from .spell_school_controller import SpellSchoolController
+from .spell_stats_controller import SpellStatsController
+from .spell_user_creation_controller import SpellUserCreationController
