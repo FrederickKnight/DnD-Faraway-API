@@ -151,7 +151,39 @@ class BaseController:
         filter_field = args.get("filter_field", type=str, default=None)
         filter_value = args.get("filter_value", type=str, default=None)
         if filter_field and filter_value:
-            _q = _q.filter(getattr(model, filter_field) == filter_value)
+            #busca todos los field separados por . en la query de la url
+            if "." in filter_field:
+                attrs = filter_field.split(".")
+                
+                rel_chain = []
+                current_model = self.__model
+                
+                #pasa por todos los atributos
+                for attr in attrs[:-1]:
+                    relation = getattr(current_model,attr)
+                    related_model = relation.property.mapper.class_
+                    rel_chain.append(relation)
+                    current_model = related_model
+            
+                try:
+                    final_attr = getattr(current_model,attrs[-1])
+                     # junta los atributos con un join para el filtro
+                    for rel in rel_chain:
+                        _q = _q.join(rel)
+                        
+                    _q = _q.filter(final_attr == filter_value)
+                    
+                except:
+                    error = {
+                        "error": "Attribute Error",
+                        "message" : "Invalid attribute in query",
+                        "details" : "Expected a valid attribute"
+                    }
+                    return error_handler(error,"Error in given attribute")
+
+            else:
+                _q = _q.filter(getattr(model, filter_field) == filter_value)
+        
         
         limit = args.get("limit",type=int,default=None)
         if limit is not None:
