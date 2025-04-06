@@ -4,6 +4,11 @@ from app.models import (
 
 from app.controllers import BaseController  
 
+from app import db
+from app.error_handler import error_handler
+from flask import Response,Request
+
+
 class SpellController(BaseController):
     def __init__(self):
         defaults = {
@@ -14,3 +19,39 @@ class SpellController(BaseController):
             "id_stats":None
         }
         super().__init__(Spell, defaults)
+        
+    def controller_get_stats_from_id(self,id,request:Request):
+        version = request.headers.get("Accept")
+        _query = self.__query_id__(id)
+        
+        if isinstance(_query,Response):
+            return _query
+
+        return self.__return_json__(_query.stats,version)
+        
+    def controller_get_components_from_id(self,id,request:Request):
+        version = request.headers.get("Accept")
+        _query = self.__query_id__(id)
+        
+        if isinstance(_query,Response):
+            return _query
+
+        return self.__return_json__(_query.stats.components,version)
+    
+    def controller_get_spell_school_from_id(self,id,request:Request):
+        version = request.headers.get("Accept")
+        _query = self.__query_id__(id)
+        
+        if isinstance(_query,Response):
+            return _query
+
+        return self.__return_json__(_query.stats.spell_school,version)
+    
+    def controller_get_scaling_from_id(self,id,request:Request):
+        version = request.headers.get("Accept")
+        _query = self.__query_id__(id)
+        
+        if isinstance(_query,Response):
+            return _query
+
+        return self.__return_json__(_query.stats.scaling,version)
