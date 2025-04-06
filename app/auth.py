@@ -146,7 +146,7 @@ def validateSessionToken(token:str):
         "user":None
     }
     
-    sessionJson = _query.get_dict()    
+    sessionJson = _query.get_json()    
     expiration_Date = datetime.fromtimestamp(sessionJson["expires_at"])
     
     if datetime.now() >= expiration_Date:
@@ -191,7 +191,7 @@ def __return_json__(items_query:User,isSecret:bool = True):
             if(isinstance(items_query,list) or isinstance(items_query,dict)):
                 _response = [item.get_dict() for item in items_query] if isSecret else [item.__get_secrets__() for item in items_query]
             else:
-                _response = [items_query.get_dict()] if isSecret else [items_query.__get_secrets__()]
+                _response = [items_query.get_json()] if isSecret else [items_query.__get_secrets__()]
         except:
             return items_query
         

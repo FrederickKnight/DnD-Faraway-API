@@ -55,3 +55,6 @@ class SpellController(BaseController):
             return _query
 
         return self.__return_json__(_query.stats.scaling,version)
+    
+    def __query_id__(self,id):
+        return self.session.query(self._model).filter_by(id = id).first()

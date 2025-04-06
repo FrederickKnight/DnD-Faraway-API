@@ -10,8 +10,8 @@ from app.controllers.versions import (
 
 class BaseController:
     def __init__(self,model,defaults):
-        self.__model = model
-        self.__defaults = defaults
+        self._model = model
+        self._defaults = defaults
         
         self.session = db.session  
         
@@ -19,7 +19,7 @@ class BaseController:
     def controller_get_all(self,request:Request):
         
         version = request.headers.get("Accept")
-        return self.__return_json__(self.__query_args__(self.__model,request.args),version)
+        return self.__return_json__(self.__query_args__(request.args),version)
         
     
     def controller_register(self,request:Request):
@@ -31,15 +31,14 @@ class BaseController:
             json_request["id"] = None
             
         try:
-            new_data = self.__model(**{**self.__defaults,**json_request})
+            new_data = self._model(**{**self._defaults,**json_request})
             self.session.add(new_data)
             self.session.commit()
             
         except Exception as e:
             self.session.rollback()
             return error_handler(e,"Error in commit")
-        
-        return self.__return_json__(self.session.query(self.__model).filter_by(id = new_data.id).first(),version)
+        return self.__return_json__(self.session.query(self._model).filter_by(id = new_data.id).first(),version)
         
         
     def controller_update(self,id = None,request:Request = None):
@@ -57,14 +56,14 @@ class BaseController:
             if "id" in json_request:
                 return Response(response=json.dumps({"message":"id in data and url"}),status=400,mimetype="application/json")
         
-        self.__defaults["id"] = _id
+        self._defaults["id"] = _id
         
-        _query = self.session.query(self.__model).filter_by(id = _id)
+        _query = self.session.query(self._model).filter_by(id = _id)
         
         if not _query:
             return self.__return_json__(_query,version)
         
-        new_data = {**self.__defaults,**json_request} 
+        new_data = {**self._defaults,**json_request} 
         
         try:
             for key,value in new_data.items():
@@ -82,7 +81,7 @@ class BaseController:
         return self.__return_json__(_query,version)
     
     def controller_delete(self,id):
-        _query = self.session.query(self.__model).filter_by(id=id).first()
+        _query = self.session.query(self._model).filter_by(id=id).first()
         
         try:
             self.session.delete(_query)
@@ -97,19 +96,13 @@ class BaseController:
 
     def controller_get_by_id(self,id,request:Request):
         version = request.headers.get("Accept")
-        return self.__return_json__(self.__query_args__(self.__model,request.args,id),version)
+        return self.__return_json__(self.__query_args__(request.args,id),version)
 
 
     ### Helpers
-    def __return_json__(self,items,version:str = None):
-        if isinstance(items,Response):
-            return items
-        
-        if isinstance(items,dict) or isinstance(items,list):
-            _response = [item.get_dict() for item in items]
-
-        else:
-            _response = [items.get_dict()]
+    def __return_json__(self,response,version:str = None):
+        if isinstance(response,Response):
+            return response
         
         #regex para versioning
         re_version = re.search(r'dndfaraway\.v(\d+)', version.lower())
@@ -123,7 +116,7 @@ class BaseController:
         res_version = versions.get(_version,None)
         
         if res_version:
-            return res_version(_response,self.__model).get_response()
+            return res_version(response,self._model).get_response()
             
         else:
             error = {
@@ -133,8 +126,8 @@ class BaseController:
             }
             return error_handler(error,"Error in Versioning")        
     
-    def __query_args__(self,model,args = None,_id:int = None):
-        _q = self.session.query(model)
+    def __query_args__(self,args = None,_id:int = None):        
+        _q = self.session.query(self._model)
         args = args if args else request.args
         
         if _id:
@@ -156,7 +149,7 @@ class BaseController:
                 attrs = filter_field.split(".")
                 
                 rel_chain = []
-                current_model = self.__model
+                current_model = self._model
                 
                 #pasa por todos los atributos
                 for attr in attrs[:-1]:
@@ -182,7 +175,7 @@ class BaseController:
                     return error_handler(error,"Error in given attribute")
 
             else:
-                _q = _q.filter(getattr(model, filter_field) == filter_value)
+                _q = _q.filter(getattr(self._model, filter_field) == filter_value)
         
         
         limit = args.get("limit",type=int,default=None)
@@ -203,7 +196,16 @@ class BaseController:
         
         result = _q.first() if first else _q.all()
         
+        show_relations = self.__str_to_bool__(args.get("relations",default="false"))
         if result:
-            return result
+            if isinstance(result,dict) or isinstance(result,list):
+                _response = [item.get_json(show_relations) for item in result]
+
+            else:
+                _response = [result.get_json(show_relations)]
+            return _response
         else:
             return Response(status=404)
+        
+    def __str_to_bool__(self,val:str):
+        return val.lower() in ["true","1","yes","y"]
