@@ -1,6 +1,6 @@
 from app import db
 from app.error_handler import error_handler
-from flask import Response,json,Request
+from flask import Response,json,Request,request
 import re
 
 from app.controllers.versions import (
@@ -19,10 +19,7 @@ class BaseController:
     def controller_get_all(self,request:Request):
         
         version = request.headers.get("Accept")
-        # ADD ARGS
-        
-        _query = self.session.query(self.__model).all()
-        return self.__return_json__(_query,version)
+        return self.__return_json__(self.__query_args__(self.__model,request.args),version)
         
     
     def controller_register(self,request:Request):
@@ -42,7 +39,7 @@ class BaseController:
             self.session.rollback()
             return error_handler(e,"Error in commit")
         
-        return self.__return_json__(self.session.query(self.__model).filter_by(id = new_data.id).all(),version)
+        return self.__return_json__(self.session.query(self.__model).filter_by(id = new_data.id).first(),version)
         
         
     def controller_update(self,id = None,request:Request = None):
@@ -62,7 +59,7 @@ class BaseController:
         
         self.__defaults["id"] = _id
         
-        _query = self.__query_id__(_id)
+        _query = self.session.query(self.__model).filter_by(id = _id)
         
         if not _query:
             return self.__return_json__(_query,version)
@@ -85,7 +82,7 @@ class BaseController:
         return self.__return_json__(_query,version)
     
     def controller_delete(self,id):
-        _query = self.__query_id__(id)
+        _query = self.session.query(self.__model).filter_by(id=id).first()
         
         try:
             self.session.delete(_query)
@@ -100,7 +97,7 @@ class BaseController:
 
     def controller_get_by_id(self,id,request:Request):
         version = request.headers.get("Accept")
-        return self.__return_json__(self.__query_id__(id),version)
+        return self.__return_json__(self.__query_args__(self.__model,request.args,id),version)
 
 
     ### Helpers
@@ -134,19 +131,47 @@ class BaseController:
                 "message": "The given Version of the API is incorrect or null",
                 "details" : 'Expected dndfaraway.v[version] in header with keyword "Accept" with a correct version number'
             }
-            return error_handler(error,"Error in Versioning")
+            return error_handler(error,"Error in Versioning")        
+    
+    def __query_args__(self,model,args = None,_id:int = None):
+        _q = self.session.query(model)
+        args = args if args else request.args
         
+        if _id:
+            if isinstance(_id,int):
+                _q = _q.filter_by(id = _id)
+            else:
+                error = {
+                    "error": "Invalid id",
+                    "message" : "Required id for search, id it's not valid",
+                    "details" : "Expected a number/interger id"
+                }
+                return error_handler(error,"Error in query")
         
-    def __query_id__(self,_id):
-        if not _id or not isinstance(_id,int):
-            error = {
-                "error": "Id Null",
-                "message" : "Required id for search, id it's not given",
-                "details" : ""
-            }
-            return error_handler(error,"Error in query")
+        filter_field = args.get("filter_field", type=str, default=None)
+        filter_value = args.get("filter_value", type=str, default=None)
+        if filter_field and filter_value:
+            _q = _q.filter(getattr(model, filter_field) == filter_value)
+        
+        limit = args.get("limit",type=int,default=None)
+        if limit is not None:
+            _q = _q.limit(limit)
+            
+        offset = args.get("offset",type=int,default=0)
+        if offset > 0:
+            _q = _q.offset(offset)
+            
+        page = args.get("page",type=int,default=1)
+        if page > 1:
+            _p = (page - 1) * limit if limit else (page - 1)
+            _q = _q.offset(_p)
+            
+        # return first or all
+        first = args.get("first",type=bool,default=False)
+        
+        result = _q.first() if first else _q.all()
+        
+        if result:
+            return result
         else:
-            _query = self.session.query(self.__model).filter_by(id = _id).first()
-            if not _query:
-                return Response(status=404)
-            return _query
+            return Response(status=404)

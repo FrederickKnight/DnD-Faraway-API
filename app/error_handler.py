@@ -6,27 +6,25 @@ from sqlalchemy.exc import (
 
 def error_handler(error,_context:str = ""):
     
+    response_status = 400
+    _error = "Unhandled Error"
+    _message = "Something went wrong"
+    
     if isinstance(error,dict):
-        _error = error["error"]
-        _message = error["message"]
-        _details = error["details"]
-        
-        response_status = 400
+        _error = error.get("error","Unknown Error")
+        _message = error.get("message","No message provided")
+        _details = error.get("details","No details provided")
         
     else:
+        _details = str(error)
         if isinstance(error,IntegrityError):
             _error = "Integrity Error"
             _message = "Invalid given data or parameters"
-            _details = str(error)
+            _details = str(error.orig) if hasattr(error,"orig") else str(error)
             
-            response_status = 400
-            
-        if isinstance(error,TypeError):
+        elif isinstance(error,TypeError):
             _error = "Type Error"
             _message = "Invalid given data or parameters"
-            _details = str(error)
-            
-            response_status = 400
         
     schema_error = {
             "data":[],
