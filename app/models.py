@@ -20,12 +20,23 @@ class BaseModel(db.Model):
     id:Mapped[int] = mapped_column(primary_key=True)
     
     def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id})>"
+        attrs = [f"{col.name}={getattr(self, col.name)}" for col in self.__table__.columns]
+        return f"<{self.__getClassName__()}({', '.join(attrs)})>"
     
-    def get_dict(self):
-        return {
-            "id":self.id
-        }
+    def get_json(self,include_relationships: bool = False):
+        data = {col.name: getattr(self, col.name) for col in self.__table__.columns}
+    
+        if include_relationships:
+            for rel in self.__mapper__.relationships:
+                val = getattr(self, rel.key)
+                if isinstance(val, list):
+                    data[rel.key] = [item.get_json() for item in val]
+                elif val is not None:
+                    data[rel.key] = val.get_json()
+                else:
+                    data[rel.key] = None
+                    
+        return data
 
     def __getClassName__(self):
         return type(self).__name__
@@ -39,19 +50,6 @@ class BaseCreatable(BaseModel):
     is_homebrew:Mapped[bool]
     description:Mapped[Optional[str]]
     
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},name={self.name},version={self.version},is_homebrew={self.is_homebrew},description={self.description})>"
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "name":self.name,
-            "version":self.version,
-            "is_homebrew":self.is_homebrew,
-            "description":self.description,
-        }
-        
-        
 # ----------------------- END BASE CLASS -----------------------
 
 # ----------------------- START AUTH CLASS -----------------------
@@ -68,7 +66,7 @@ class User(BaseModel):
     def __repr__(self):
         return f"<{self.__getClassName__()}(id={self.id},username={self.username}>"
     
-    def __get_secrets__(self):
+    def __get_secrets__(self,include_relationships = None):
         return {
             "id":self.id,
             "username":self.username,
@@ -76,7 +74,7 @@ class User(BaseModel):
             "auth_level":self.auth_level
         }
         
-    def get_dict(self):
+    def get_json(self,include_relationships = None):
         return {
             "id":self.id,
             "username":self.username,
@@ -89,17 +87,6 @@ class UserSession(BaseModel):
     session:Mapped[str]
     
     expires_at:Mapped[int]
-    
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},id_user={self.id_user},expires_at={self.expires_at},session={self.session}>"
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "user":self.user.get_dict(),
-            "expires_at":self.expires_at,
-            "session":self.session
-        }
 
 # ----------------------- END AUTH CLASS -----------------------
 
@@ -114,20 +101,6 @@ class Spell(BaseCreatable):
     stats:Mapped["SpellStats"] = relationship("SpellStats",back_populates="spell")
     
     user_creation:Mapped["UserSpell"] = relationship("UserSpell",back_populates="spell")
-    
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},name={self.name},version={self.version},is_homebrew={self.is_homebrew},description={self.description},id_stats={self.id_stats})>"
-
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "name":self.name,
-            "version":self.version,
-            "is_homebrew":self.is_homebrew,
-            "description":self.description,
-            "stats":self.stats.get_dict(),
-        }
 
 # ----------------------- END MAIN CLASS -----------------------
 
@@ -139,16 +112,6 @@ class UserSpell(BaseModel):
     
     id_user:Mapped[int] = mapped_column(ForeignKey("user.id"))
     user:Mapped["User"] = relationship("User",back_populates="spell_creation")
-    
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},id_user={self.id_user},id_spell={self.id_spell})>"
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "user":self.user.get_dict(),
-            "spell":self.spell.get_dict()
-        }
 
 # ----------------------- END RELATIONSHIP WITH USER CLASS -----------------------
 
@@ -184,36 +147,6 @@ class SpellStats(BaseModel):
     id_scaling:Mapped[Optional[int]] = mapped_column(ForeignKey("spell_scaling.id"),unique=True)
     scaling:Mapped["SpellScaling"] = relationship("SpellScaling",back_populates="spell_stats")
     
-    def __repr__(self):
-        
-        r =f"<{self.__getClassName__()}(id={self.id},level={self.level},is_ritual={self.is_ritual},casting_time={self.casting_time},casting_action_type={self.casting_action_type},"
-        r += f"casting_description={self.casting_description},duration_time={self.duration_time},duration_time_type={self.duration_time_type},duration_type={self.duration_type},"
-        r += f"range_distance={self.range_distance},range_type={self.range_type},area_distance={self.area_distance},area_type={self.area_type},id_spell_school={self.id_spell_school},"
-        r += f"id_components={self.id_components},id_scaling={self.id_scaling}"
-        r += ")>"
-        
-        return r
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "level":self.level,
-            "is_ritual":self.is_ritual,
-            "casting_time":self.casting_time,
-            "casting_action_type":self.casting_action_type,
-            "casting_description":self.casting_description,
-            "duration_time":self.duration_time,
-            "duration_time_type":self.duration_time_type,
-            "duration_type":self.duration_type,
-            "range_distance":self.range_distance,
-            "range_type":self.range_type,
-            "area_distance":self.area_distance,
-            "area_type":self.area_type,
-            "spell_school":self.spell_school.get_dict(),
-            "components":self.components.get_dict(),
-            "scaling":self.scaling.get_dict()
-        }
-    
     
 class SpellComponents(BaseModel):
     spell_stats:Mapped["SpellStats"] = relationship("SpellStats",back_populates="components")
@@ -224,33 +157,9 @@ class SpellComponents(BaseModel):
     special:Mapped[bool]
     
     description:Mapped[Optional[str]]
-
-    
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},verbal={self.verbal},somantic={self.somantic},material={self.material},special={self.special},description={self.description})>"
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "verbal":self.verbal,
-            "somantic":self.somantic,
-            "material":self.material,
-            "special":self.special,
-            "description":self.description
-        }
     
 class SpellScaling(BaseModel):
     spell_stats:Mapped["SpellStats"] = relationship("SpellStats",back_populates="scaling")
-
     description:Mapped[Optional[str]]
-
-    def __repr__(self):
-        return f"<{self.__getClassName__()}(id={self.id},description={self.description})>"
-    
-    def get_dict(self):
-        return {
-            "id":self.id,
-            "description":self.description
-        }
     
 # ----------------------- END RELATIONSHIP CLASS -----------------------
