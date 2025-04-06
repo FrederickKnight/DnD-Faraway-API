@@ -1,7 +1,12 @@
 from app import db
 from app.error_handler import error_handler
 from flask import Response,json,Request
+import re
 
+from app.controllers.versions import (
+    JsonResponseV1,
+    JsonResponseV2
+)
 
 class BaseController:
     def __init__(self,model,defaults):
@@ -14,6 +19,7 @@ class BaseController:
     def controller_get_all(self,request:Request):
         
         version = request.headers.get("Accept")
+        # ADD ARGS
         
         _query = self.session.query(self.__model).all()
         return self.__return_json__(_query,version)
@@ -99,8 +105,6 @@ class BaseController:
 
     ### Helpers
     def __return_json__(self,items,version:str = None):
-        _version = version if version != None else "v1"
-    
         if isinstance(items,Response):
             return items
         
@@ -110,30 +114,25 @@ class BaseController:
         else:
             _response = [items.get_dict()]
         
-        if "dndfaraway.v1" in _version:
-            return {
-                "data":_response,
-                "metadata":{
-                    "type":str(self.__model().__getClassName__()),
-                    "size":len(_response)
-                }
-            }
-            
-        if "dndfaraway.v2" in _version:
-            return {
-                "response":_response,
-                "metadata":{
-                    "type":str(self.__model().__getClassName__()),
-                    "size":len(_response),
-                    "api_version":"v2"
-                }
-            }
+        #regex para versioning
+        re_version = re.search(r'dndfaraway\.v(\d+)', version.lower())
+        _version = f"v{re_version.group(1)}" if re_version else "v1"
+        
+        versions = {
+            "v1" : JsonResponseV1,
+            "v2" : JsonResponseV2
+        }
+        
+        res_version = versions.get(_version,None)
+        
+        if res_version:
+            return res_version(_response,self.__model).get_response()
             
         else:
             error = {
                 "error": "Incorrect Version of API",
                 "message": "The given Version of the API is incorrect or null",
-                "details" : "Expected dndfaraway.[version]"
+                "details" : 'Expected dndfaraway.v[version] in header with keyword "Accept" with a correct version number'
             }
             return error_handler(error,"Error in Versioning")
         

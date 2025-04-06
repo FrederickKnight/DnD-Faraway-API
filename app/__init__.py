@@ -35,14 +35,14 @@ def create_app():
 def define_routes():
     # -------------------------------- Routes --------------------------------
     
-    ## Spells Routes
-    from server.app.routes.routes_spells import (
-        spell_school_bp,
-        spell_bp,
-        spell_stats_bp,
-        spell_components_bp,
-        spell_scaling_bp,
-        spell_user_creation_bp
+    ## Spells Routes    
+    from app.routes.spells import (
+        SpellComponentsRoute,
+        SpellSchoolRoute,
+        SpellScalingRoute,
+        SpellRoute,
+        SpellStatsRoute,
+        SpellUserCreationRoute
     )
     
     from app.routes.auth import (
@@ -54,15 +54,15 @@ def define_routes():
     
     
     # spell routes
-    app.register_blueprint(spell_school_bp,url_prefix="/api/spell-school/")
-    app.register_blueprint(spell_bp,url_prefix="/api/spell/")
-    app.register_blueprint(spell_stats_bp,url_prefix="/api/spell-stats/")
-    app.register_blueprint(spell_components_bp,url_prefix="/api/spell-components/")
-    app.register_blueprint(spell_scaling_bp,url_prefix="/api/spell-scaling/")
+    app.register_blueprint(SpellSchoolRoute().get_blueprint(),url_prefix="/api/spell-school/")
+    app.register_blueprint(SpellRoute().get_blueprint(),url_prefix="/api/spell/")
+    app.register_blueprint(SpellStatsRoute().get_blueprint(),url_prefix="/api/spell-stats/")
+    app.register_blueprint(SpellComponentsRoute().get_blueprint(),url_prefix="/api/spell-components/")
+    app.register_blueprint(SpellScalingRoute().get_blueprint(),url_prefix="/api/spell-scaling/")
     
     
     # user relations
-    app.register_blueprint(spell_user_creation_bp,url_prefix="/api/user/spell")
+    app.register_blueprint(SpellUserCreationRoute().get_blueprint(),url_prefix="/api/user/spell")
     
 
 def __return_json__(items_query):
