@@ -1,6 +1,7 @@
-from . import db
-from typing import Optional
+from . import db,Bcrypt
+bcrypt = Bcrypt()
 
+from typing import Optional
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -79,6 +80,12 @@ class User(BaseModel):
             "id":self.id,
             "username":self.username,
         }
+    
+    def set_password(self,password:str):
+        self.password = bcrypt.generate_password_hash(password).decode("utf-8")
+    
+    def validate_password(self,password:str):
+        return bcrypt.check_password_hash(self.password,password)
         
 class UserSession(BaseModel):
     id_user:Mapped[int] = mapped_column(ForeignKey("user.id"),unique=True)
