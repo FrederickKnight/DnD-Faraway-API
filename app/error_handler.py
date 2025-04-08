@@ -1,39 +1,37 @@
 from flask import Response,json
+from .custom_errors import AppError
 
 from sqlalchemy.exc import (
     IntegrityError
 )
 
-def error_handler(error,_context:str = ""):
-    
-    response_status = 400
-    _error = "Unhandled Error"
-    _message = "Something went wrong"
-    
-    if isinstance(error,dict):
-        _error = error.get("error","Unknown Error")
-        _message = error.get("message","No message provided")
-        _details = error.get("details","No details provided")
-        
-    else:
-        _details = str(error)
-        if isinstance(error,IntegrityError):
-            _error = "Integrity Error"
-            _message = "Invalid given data or parameters"
-            _details = str(error.orig) if hasattr(error,"orig") else str(error)
-            
-        elif isinstance(error,TypeError):
-            _error = "Type Error"
-            _message = "Invalid given data or parameters"
-        
-    schema_error = {
-            "data":[],
-            "metadata":{
-                "context":_context,
-                "error":_error,
-                "message":_message,
-                "details":_details,
-            }
+def _get_schema_error(error,message,details):
+    return {
+        "data": [],
+        "metadata": {
+            "context": "",
+            "error": error,
+            "message": message,
+            "details": details,
+        }
     }
-        
-    return Response(response=json.dumps(schema_error),status=response_status,mimetype="application/json")
+
+def register_error_handlers(app):
+    @app.errorhandler(AppError)
+    def handle_app_error(error):
+        schema_error = _get_schema_error(error.error,error.message,error.details)
+        return Response(response=json.dumps(schema_error), status=400, mimetype="application/json")
+
+    @app.errorhandler(IntegrityError)
+    def handle_integrity_error(error):
+        schema_error = _get_schema_error(
+            error="Integrity Error",
+            message="Invalid given data or parameters",
+            details=str(error.orig) if hasattr(error, "orig") else str(error)
+        )
+        return Response(response=json.dumps(schema_error), status=400, mimetype="application/json")
+
+    @app.errorhandler(Exception)
+    def handle_generic_error(error):
+        schema_error = _get_schema_error(error="Unhandled Error",message="Something went wrong",details=str(error))
+        return Response(response=json.dumps(schema_error), status=500, mimetype="application/json")
