@@ -39,14 +39,13 @@ def register_user(data):
         
     user_already_exist = True if __query_username__(data["username"]) else False
     
-    if not "password" in data:
-        raise ValidationError("invalid given data, not password")
-
-    data["password"] = bcrypt.generate_password_hash(data["password"])
-    
     if not user_already_exist:
+        if not "password" in data:
+            raise ValidationError("invalid given data, not password")
+        
         try:
             new_data = User(**{**_user_defaults,**data})
+            new_data.set_password(data["password"])
             session.add(new_data)
             session.commit()
             
@@ -92,7 +91,7 @@ def validate_user(data):
         if _user == None:
             raise ValidationError("User doesn't exist or invalid given data")
             
-        data_pass = bcrypt.check_password_hash(_user.__get_secrets__()["password"],data["password"])
+        data_pass = _user.validate_password(data["password"])
         
         if data_pass == False:
             raise ValidationError("Password is incorrect or invalid given data")
@@ -137,7 +136,7 @@ def createSessionToken(_json,UserId:int):
 def validateSessionToken(token:str):
     userSessionId = sha256(token.encode('utf-8'),usedforsecurity=True).hexdigest()
     _query = session.query(UserSession).filter_by(session = userSessionId).first()
-    
+
     sessionData = {
         "session":None,
         "user":None
@@ -149,7 +148,7 @@ def validateSessionToken(token:str):
         "user":None
     }
     
-    sessionJson = _query.get_json()    
+    sessionJson = _query.get_json(True)
     expiration_Date = datetime.fromtimestamp(sessionJson["expires_at"])
     
     if datetime.now() >= expiration_Date:
@@ -168,7 +167,7 @@ def validateSessionToken(token:str):
         session.merge(_query)
         session.flush()
         session.commit()
-        
+    
     id_user = sessionJson["user"]["id"]
     sessionData["user"] = sessionJson["user"]
     
