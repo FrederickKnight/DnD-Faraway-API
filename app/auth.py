@@ -6,6 +6,9 @@ import binascii
 from hashlib import sha256
 from datetime import datetime,timedelta
 import math
+from app.custom_errors import (
+    ValidationError
+)
 
 from .models import (
     User,
@@ -37,7 +40,7 @@ def register_user(data):
     user_already_exist = True if __query_username__(data["username"]) else False
     
     if not "password" in data:
-        return Response(response=json.dumps({"error":"invalid given data, not password"}),status=400,mimetype="application/json")
+        raise ValidationError("invalid given data, not password")
 
     data["password"] = bcrypt.generate_password_hash(data["password"])
     
@@ -53,7 +56,7 @@ def register_user(data):
 
         return __return_json__(session.query(User).filter_by(id = new_data.id).first())
     else:
-        return Response(response=json.dumps({"error":"user already exist"}),status=400,mimetype="application/json")
+        raise ValidationError("User already exist")
     
 def delete_user_by_id(id):
     
@@ -70,7 +73,7 @@ def delete_user_by_id(id):
         
         return Response(status=204)
     else:
-        return Response(response=json.dumps({"error":"User doesn't exist or invalid given data"}),status=400,mimetype="application/json")
+        raise ValidationError("User doesn't exist or invalid given data")
 
         
 # Update User later
@@ -81,23 +84,24 @@ def get_by_id(_id):
     if _user != None:
         return __return_json__(_user)
     else:
-        return Response(response=json.dumps({"error":"User doesn't exist or invalid given data"}),status=400,mimetype="application/json")
+        raise ValidationError("User doesn't exist or invalid given data")
         
 def validate_user(data):
     if "username" in data and "password" in data:
         _user = __query_username__(data["username"])
         if _user == None:
-            return Response(response=json.dumps({"error":"User doesn't exist or invalid given data"}),status=400,mimetype="application/json")
+            raise ValidationError("User doesn't exist or invalid given data")
             
         data_pass = bcrypt.check_password_hash(_user.__get_secrets__()["password"],data["password"])
         
         if data_pass == False:
-            return Response(response=json.dumps({"error":"Password is incorrect or invalid given data"}),status=400,mimetype="application/json")
+            raise ValidationError("Password is incorrect or invalid given data")
             
         return __return_json__(_user)
     
     else:
-        return Response(response=json.dumps({"error":"invalid given data"}),status=400,mimetype="application/json")
+        raise ValidationError("invalid given data, not username or password")
+
 # --------- AUTH -------------
 def generateSessionToken():
     bytes = urandom(20)
@@ -107,7 +111,7 @@ def generateSessionToken():
 
 def createSessionToken(_json,UserId:int):
     if not "token" in _json:
-        return Response(response=json.dumps({"error":"there is no token"}),status=400,mimetype="application/json")
+        raise ValidationError("there is no token")
     
     token = _json["token"]    
     
@@ -178,9 +182,9 @@ def invalidateSession(userSessionId:str):
     if _query:
         session.delete(_query)
         session.commit()
-        return Response(response=json.dumps({"message":"session succesfully deleted"}),status=200,mimetype="application/json")
+        return Response(status=204,mimetype="application/json")
     else:
-        return Response(response=json.dumps({"error":"Invalid Session"}),status=400,mimetype="application/json")
+        raise ValidationError("Invalid Session")
         
     
 #helpers
@@ -205,14 +209,12 @@ def __return_json__(items_query:User,isSecret:bool = True):
 def __query_id__(_id):
     if isinstance(_id,int):
         return session.query(User).filter_by(id = _id).first()
-    else:
-        return Response(response=json.dumps({"invalid given data"}),status=400,mimetype="application/json")
+    return None
 
 def __query_username__(_username):
     if isinstance(_username,str):
         return session.query(User).filter_by(username = _username).first()
-    else:
-        return Response(response=json.dumps({"error":"invalid given data"}),status=400,mimetype="application/json")
+    return None
 
     
 def __query_username__(_username):
