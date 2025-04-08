@@ -5,7 +5,6 @@ from app.models import (
 from app.controllers import BaseController  
 
 from app import db
-from app.error_handler import error_handler
 from flask import Response,Request
 
 

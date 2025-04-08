@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 import os
+from .error_handler import register_error_handlers
 
 db = SQLAlchemy()
 
@@ -10,6 +11,7 @@ DB_NAME = os.environ["DB_NAME"]
 
 app = Flask(__name__)
 
+register_error_handlers(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 

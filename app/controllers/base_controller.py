@@ -1,5 +1,9 @@
 from app import db
-from app.error_handler import error_handler
+from app.custom_errors import (
+    AttributeError,
+    VersionError,
+    InvalidIDError
+)
 from flask import Response,json,Request,request
 import re
 
@@ -37,7 +41,7 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return error_handler(e,"Error in commit")
+            raise e
         return self.__return_json__(self.session.query(self._model).filter_by(id = new_data.id).first(),version)
         
         
@@ -76,7 +80,7 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return error_handler(e,"Error in commit")
+            raise e
         
         return self.__return_json__(_query,version)
     
@@ -89,7 +93,7 @@ class BaseController:
             
         except Exception as e:
             self.session.rollback()
-            return error_handler(e,"Error in commit")
+            raise e
         
         return Response(status=204)
 
@@ -119,12 +123,7 @@ class BaseController:
             return res_version(response,self._model).get_response()
             
         else:
-            error = {
-                "error": "Incorrect Version of API",
-                "message": "The given Version of the API is incorrect or null",
-                "details" : 'Expected dndfaraway.v[version] in header with keyword "Accept" with a correct version number'
-            }
-            return error_handler(error,"Error in Versioning")        
+            raise VersionError("Error in versioning")
     
     def __query_args__(self,args = None,_id:int = None):        
         _q = self.session.query(self._model)
@@ -134,12 +133,7 @@ class BaseController:
             if isinstance(_id,int):
                 _q = _q.filter_by(id = _id)
             else:
-                error = {
-                    "error": "Invalid id",
-                    "message" : "Required id for search, id it's not valid",
-                    "details" : "Expected a number/interger id"
-                }
-                return error_handler(error,"Error in query")
+                raise InvalidIDError("Expected a number/interger id")
         
         filter_field = args.get("filter_field", type=str, default=None)
         filter_value = args.get("filter_value", type=str, default=None)
@@ -167,12 +161,7 @@ class BaseController:
                     _q = _q.filter(final_attr == filter_value)
                     
                 except:
-                    error = {
-                        "error": "Attribute Error",
-                        "message" : "Invalid attribute in query",
-                        "details" : "Expected a valid attribute"
-                    }
-                    return error_handler(error,"Error in given attribute")
+                    raise AttributeError("Expected a valid attribute in query args")
 
             else:
                 _q = _q.filter(getattr(self._model, filter_field) == filter_value)
