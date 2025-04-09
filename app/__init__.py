@@ -3,11 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 import os
+from dotenv import load_dotenv
 from .error_handler import register_error_handlers
 
 db = SQLAlchemy()
-
-DB_NAME = os.environ["DB_NAME"]
 
 app = Flask(__name__)
 
@@ -17,7 +16,10 @@ CORS(app)
 
 def create_app():
     
-    app.config["SQLALCHEMY_DATABASE_URI"] = f'sqlite:///{DB_NAME}'
+    if os.environ.get("DB_URL") is None:
+        load_dotenv()
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DB_URL")
     db.init_app(app)
     
     from .models import (

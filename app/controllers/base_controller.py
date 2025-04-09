@@ -194,7 +194,8 @@ class BaseController:
                 _response = [result.get_json(show_relations)]
             return _response
         else:
-            return Response(status=404)
+            # retornar data vacio
+            return Response(status=204)
         
     def __str_to_bool__(self,val:str):
         return val.lower() in ["true","1","yes","y"]
